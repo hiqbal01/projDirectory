@@ -10,6 +10,7 @@ var users = require('./routes/users');
 var mysql      = require('mysql');
 var db = require('./db');
 var init = require('./init');
+var Sequelize = require('sequelize');
 
 var app = express();
 
@@ -59,10 +60,10 @@ app.use(function(err, req, res, next) {
   });
 });
 
-var pool = db.connect(mysql, function(){
-  init.init(db);
+db.connect(Sequelize, function(){
+    return db.User.findById(1).then(function(data){
+        console.log(data.name);
+    });
 });
-
-
 
 module.exports = app;

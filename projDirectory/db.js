@@ -1,67 +1,42 @@
 module.exports = {
-  pool: null,
-  
-  connect: function(mysql, success){
-    this.pool = mysql.createPool({
-      host     : 'projdirectory.crfeabkycicb.us-west-2.rds.amazonaws.com',
-      user     : '*****',
-      password : '*****',
-      database : 'projdirectory',
-      port: '3306'
-    });
-
-    this.pool.getConnection(function(err, connection){
-      if(err) throw err;
-      connection.query('SELECT 1 + 1 AS solution', function(error, rows, fields) {
-        if (error) throw error;
-        if(rows[0].solution === 2){
-          console.log("Connected to DB");
-          if(success) success();
-        }
-        connection.release();
-      });
-    });
-    
-    return this.pool;
-  },
-  
-  query: function(queryString, success){
-    this.pool.getConnection(function(err, connection){
-      if(err) throw err;
-      connection.query(queryString, function(error, rows, fields) {
-        if (error) throw error;
-        if(success){
-          success(rows, fields);
-        }
-        connection.release();
-      });
-    });
-  },
-  
-  insert: function(queryString, obj, success){
-    this.pool.getConnection(function(err, connection){
-      if(err) throw err;
-      var q = connection.query(queryString, obj, function(error, result) {
-        console.log(result);
-        if (error){
-          return connection.rollback(function() {
-            throw error;
-          });
-        }
-        if(success){
-          success(result);
-        }
-        connection.release();
-      });
-    });
-  },
-  
-  end: function(){
-    if(this.pool != null){
-      pool.end(function(err){
-        if(err) throw err;
-      });
+    sequelize: null,
+    connect: function(Sequelize, success){
+        this.sequelize = new Sequelize('projdirectory', '*', '*',{
+            host: 'projdirectory.crfeabkycicb.us-west-2.rds.amazonaws.com',
+            dialect: 'mysql',
+            pool: {
+                max: 10,
+                min: 0,
+                idle: 10000
+            }
+        }); 
+        this.createTables(Sequelize);
+        this.init(Sequelize, success);
+    },
+    createTables: function(Sequelize){
+        var self = this;
+        self["User"] = self.sequelize.define('User', {
+            username: Sequelize.STRING,
+            name: Sequelize.STRING,
+            email: Sequelize.STRING,
+            role: Sequelize.ENUM('ADMIN', 'USER'),
+            department: Sequelize.STRING  
+        });
+    },
+    init: function(Sequelize, success){
+        var self = this;
+        self.sequelize.sync().then(function() {
+            return self["User"].create({
+                username: 'janedoe',
+                name: 'Jane Doe',
+                email: 'jane@does.com',
+                role: 'USER',
+                department: 'CS'
+            });
+        }).then(function(){
+            if(success){
+                success();
+            }
+        });
     }
-  }
-  
 }
